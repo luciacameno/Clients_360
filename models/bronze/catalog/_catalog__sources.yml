@@ -1,0 +1,18 @@
+sources:
+  - name: catalog
+    description: Catálogo maestro de productos.
+    database: "{{ env_var('DBT_BRONZE_DB') }}"
+    schema: catalog
+    config:
+      loaded_at_field: _loaded_at
+      freshness:
+        warn_after: {count: 24, period: hour}
+        error_after: {count: 48, period: hour}
+    tables:
+      - name: products
+        description: Una fila por producto (SKU), con su gama, tono o tamaño.
+        columns:
+          - name: product_id
+            description: Identificador del producto (MKU-, SKN-, FRG-).
+          - name: product_line
+            description: Gama del producto. En silver pasa a llamarse range_name.

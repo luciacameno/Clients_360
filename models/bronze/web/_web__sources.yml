@@ -1,0 +1,18 @@
+sources:
+  - name: web
+    description: Navegación en la web y la app. Eventos en JSON semiestructurado.
+    database: "{{ env_var('DBT_BRONZE_DB') }}"
+    schema: web
+    config:
+      loaded_at_field: _loaded_at
+      freshness:
+        warn_after: {count: 24, period: hour}
+        error_after: {count: 48, period: hour}
+    tables:
+      - name: events_raw
+        description: Un evento por fila, sin procesar. Se aplana en stg_web__events.
+        columns:
+          - name: raw
+            description: El evento JSON completo (VARIANT).
+          - name: _source_file
+            description: Fichero del que se cargó el evento.

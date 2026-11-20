@@ -1,0 +1,26 @@
+sources:
+  - name: pos
+    description: Cajas de las tiendas físicas. Ventas y devoluciones tecleadas a mano.
+    database: "{{ env_var('DBT_BRONZE_DB') }}"
+    schema: pos
+    config:
+      loaded_at_field: _loaded_at
+      freshness:
+        warn_after: {count: 24, period: hour}
+        error_after: {count: 48, period: hour}
+    tables:
+      - name: sales
+        description: Una fila por línea de tique (venta o devolución).
+        columns:
+          - name: ticket_id
+            description: Identificador del tique.
+          - name: line_number
+            description: Número de línea dentro del tique.
+          - name: customer_email_input
+            description: Email tecleado en caja. Con errores 
+          - name: customer_phone_input
+            description: Teléfono tecleado en caja, en formatos variados (+34, espacios, guiones).
+          - name: transaction_type
+            description: SALE o RETURN.
+          - name: original_ticket_id
+            description: En devoluciones, el tique o pedido online original.

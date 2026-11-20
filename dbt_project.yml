@@ -50,3 +50,16 @@ seeds:
   clients_360:
     +database: "{{ env_var('DBT_SILVER_DB') }}"
     +schema: seeds
+    tiers:
+      +column_types:
+        tier_name: varchar(10)
+        tier_rank: number(1,0)
+    return_reasons:
+      +column_types:
+        reason_name: varchar(50)
+        reason_group: varchar(20)
+    stores:
+      +column_types:
+        store_id: varchar(30)
+        store_name: varchar(50)
+        city: varchar(30)

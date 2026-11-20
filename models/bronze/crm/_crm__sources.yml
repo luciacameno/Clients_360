@@ -1,0 +1,24 @@
+sources:
+  - name: crm
+    description: Programa de fidelización. Una fila por cuenta de cliente.
+    database: "{{ env_var('DBT_BRONZE_DB') }}"
+    schema: crm
+    config:
+      loaded_at_field: _loaded_at
+      freshness:
+        warn_after: {count: 24, period: hour}
+        error_after: {count: 48, period: hour}
+    tables:
+      - name: loyalty
+        description: Cuentas del CRM. Una persona puede tener varias cuentas con el mismo teléfono.
+        columns:
+          - name: crm_id
+            description: Identificador de la cuenta en el CRM.
+          - name: email
+            description: Email de la cuenta (único).
+          - name: phone
+            description: Teléfono móvil limpio, 9 dígitos. Sirve para unir cuentas de la misma persona.
+          - name: tier
+            description: Nivel de fidelización (Silver, Gold, VIP).
+          - name: join_date
+            description: Fecha de alta de la cuenta.

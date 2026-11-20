@@ -3,3 +3,16 @@
 target/
 dbt_packages/
 logs/
+.user.yml
+dbt_internal_packages/
+
+# Credenciales: nunca al repo
+profiles.yml
+.env
+*.p8
+*.pem
+
+# Sistema y editores
+.DS_Store
+.vscode/
+.idea/

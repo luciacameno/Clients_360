@@ -1,0 +1,22 @@
+models:
+  - name: stg_pos__sales
+    description: Líneas de tique del POS limpias y tipadas. Una fila por línea (venta o devolución).
+    data_tests:
+      - dbt_utils.unique_combination_of_columns: #comprueba que la combi de ticket y line:number no coincidan
+          arguments:
+            combination_of_columns: [ticket_id, line_number]
+    columns:
+      - name: sale_ts
+        data_tests: [not_null]
+      - name: amount_eur
+        description: Importe en euros, negativo en devoluciones.
+        data_tests: [not_null]
+      - name: transaction_type
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['SALE', 'RETURN']
+      - name: email
+        description: Email limpio; nulo si en caja no se capturó.
+      - name: phone
+        description: Teléfono limpio; nulo si en caja no se capturó.

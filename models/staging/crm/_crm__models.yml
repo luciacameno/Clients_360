@@ -1,0 +1,21 @@
+models:
+  - name: stg_crm__accounts
+    description: Cuentas del CRM limpias. Una fila por cuenta (no por persona).
+    columns:
+      - name: crm_id
+        description: Identificador de la cuenta.
+        data_tests: [unique, not_null]
+      - name: email
+        description: Email limpio (minúsculas, sin espacios, @@ y .con corregidos).
+        data_tests: [unique, not_null]
+      - name: phone
+        description: Teléfono limpio, 9 dígitos.
+        data_tests: [not_null]
+      - name: tier_name
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['Silver', 'Gold', 'VIP']
+      - name: join_ts
+        description: Fecha de alta. Si es nula, la fecha del CSV no se pudo convertir.
+        data_tests: [not_null]

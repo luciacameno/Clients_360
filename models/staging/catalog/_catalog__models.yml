@@ -1,0 +1,13 @@
+models:
+  - name: stg_catalog__products
+    description: Catálogo de productos limpio. Una fila por producto.
+    columns:
+      - name: product_id
+        data_tests: [unique, not_null]
+      - name: list_price_eur
+        data_tests: [not_null]
+      - name: category_name
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['Makeup', 'Skincare', 'Fragrance']

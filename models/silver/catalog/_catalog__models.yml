@@ -1,0 +1,40 @@
+models:
+  - name: slv_catalog__categories
+    description: Categorías de producto. Una fila por categoría.
+    columns:
+      - name: category_id
+        data_tests: [unique, not_null]
+      - name: category_name
+        data_tests: [unique, not_null]
+
+  - name: slv_catalog__ranges
+    description: Gamas (Velvet Matte, Hydra Life…). Cada gama es exclusiva de una marca, que se guarda como atributo.
+    columns:
+      - name: range_id
+        data_tests: [unique, not_null]
+      - name: brand_name
+        data_tests: [not_null]
+
+  - name: slv_catalog__products
+    description: Productos (SKU). La marca se obtiene a través de la gama; la subcategoría es un atributo.
+    columns:
+      - name: product_id
+        data_tests: [unique, not_null]
+      - name: range_id
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('slv_catalog__ranges')
+                field: range_id
+      - name: category_id
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('slv_catalog__categories')
+                field: category_id
+      - name: subcategory_name
+        data_tests: [not_null]
+      - name: list_price_eur
+        data_tests: [not_null]

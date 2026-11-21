@@ -1,0 +1,94 @@
+models:
+  - name: slv_pos__stores
+    description: Tiendas físicas (seed stores).
+    columns:
+      - name: store_id
+        data_tests: [unique, not_null]
+
+  - name: slv_pos__return_reasons
+    description: Motivos de devolución con su grupo (seed return_reasons).
+    columns:
+      - name: return_reason_id
+        data_tests: [unique, not_null]
+      - name: reason_name
+        data_tests: [unique, not_null]
+
+  - name: slv_pos__tickets
+    description: Cabecera del tique. La clienta se identifica por email limpio o, si no, por teléfono (regla R1c).
+    columns:
+      - name: ticket_id
+        data_tests: [unique, not_null]
+      - name: store_id
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('slv_pos__stores')
+                field: store_id
+      - name: customer_key
+        description: Nulo si la clienta no se pudo identificar.
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('slv_customers')
+                field: customer_key
+      - name: ticket_type
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['SALE', 'RETURN']
+      - name: identification_method
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['email', 'email_corregido', 'telefono', 'telefono_compartido', 'ninguno']
+
+  - name: slv_pos__ticket_lines
+    description: Líneas del tique. Una fila por producto vendido o devuelto.
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns: [ticket_id, line_number]
+    columns:
+      - name: ticket_id
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('slv_pos__tickets')
+                field: ticket_id
+      - name: product_id
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('slv_catalog__products')
+                field: product_id
+      - name: amount_eur
+        data_tests: [not_null]
+
+  - name: slv_pos__returns
+    description: Líneas devueltas, con su motivo y su documento original (tique de tienda o pedido online).
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns: [ticket_id, line_number]
+    columns:
+      - name: return_reason_id
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('slv_pos__return_reasons')
+                field: return_reason_id
+      - name: original_ticket_id
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('slv_pos__tickets')
+                field: ticket_id
+      - name: original_order_id
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('slv_web__orders')
+                field: order_id

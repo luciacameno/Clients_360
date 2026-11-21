@@ -1,0 +1,75 @@
+models:
+  - name: slv_web__sessions
+    description: Sesiones web y app. La cookie y el dispositivo son atributos de la sesión.
+    columns:
+      - name: session_id
+        data_tests: [unique, not_null]
+      - name: cookie_id
+        data_tests: [not_null]
+      - name: channel
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['web', 'app']
+
+  - name: slv_web__events
+    description: >
+      Eventos web. Cuelgan solo de la sesión; product_id, logged_email y order_id son
+      atributos sin relación declarada (el cruce se hace en gold).
+    columns:
+      - name: event_id
+        data_tests: [unique, not_null]
+      - name: session_id
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('slv_web__sessions')
+                field: session_id
+      - name: action
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['view_item', 'add_to_cart', 'purchase']
+
+  - name: slv_web__orders
+    description: Cabecera del pedido online, con la cuenta que compra.
+    columns:
+      - name: order_id
+        data_tests: [unique, not_null]
+      - name: session_id
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('slv_web__sessions')
+                field: session_id
+      - name: crm_id
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('slv_crm__accounts')
+                field: crm_id
+
+  - name: slv_web__order_lines
+    description: Líneas del pedido online. Una fila por producto comprado.
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns: [order_id, product_id]
+    columns:
+      - name: order_id
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('slv_web__orders')
+                field: order_id
+      - name: product_id
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('slv_catalog__products')
+                field: product_id
+      - name: unit_price_eur
+        data_tests: [not_null]

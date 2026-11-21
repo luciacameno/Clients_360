@@ -1,0 +1,51 @@
+models:
+  - name: slv_crm__tiers
+    description: Niveles de fidelización con su orden (seed tiers).
+    columns:
+      - name: tier_id
+        data_tests:
+          - unique
+          - not_null
+      - name: tier_name
+        data_tests:
+          - unique
+          - not_null
+
+  - name: slv_crm__accounts
+    description: Cuentas del CRM. Una persona (slv_customers) puede tener varias.
+    columns:
+      - name: crm_id
+        data_tests:
+          - unique
+          - not_null
+      - name: customer_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('slv_crm__customers')
+                field: customer_key
+      - name: email
+        data_tests:
+          - unique
+          - not_null
+      - name: tier_id
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('slv_crm__tiers')
+                field: tier_id
+
+  - name: slv_crm__customers
+    description: >
+      Una fila por persona. Las cuentas con el mismo teléfono limpio y el mismo nombre
+      normalizado se fusionan (regla R1a). customer_key = crm_id de la cuenta más antigua.
+    columns:
+      - name: customer_key
+        description: "..."
+        data_tests:
+          - unique
+          - not_null
+      - name: otra_columna
+        description: "..."

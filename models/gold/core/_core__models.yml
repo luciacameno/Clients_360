@@ -1,0 +1,92 @@
+models:
+  - name: dim_customers
+    description: Golden Record. Una fila por persona con la supervivencia del dato aplicada (R1b), más la fila -1.
+    columns:
+      - name: customer_key
+        data_tests: [unique, not_null]
+
+  - name: dim_products
+    description: Productos con la jerarquía desnormalizada (gama, marca, subcategoría, categoría).
+    columns:
+      - name: product_key
+        data_tests: [unique, not_null]
+
+  - name: dim_stores
+    description: Tiendas físicas más la tienda ONLINE.
+    columns:
+      - name: store_key
+        data_tests: [unique, not_null]
+
+  - name: dim_channels
+    description: Canales de venta y navegación.
+    columns:
+      - name: channel_key
+        data_tests: [unique, not_null]
+
+  - name: dim_return_reasons
+    description: Motivos de devolución más la fila -1 (ventas).
+    columns:
+      - name: return_reason_key
+        data_tests: [unique, not_null]
+
+  - name: dim_date
+    description: Calendario diario de 2024 a 2026.
+    columns:
+      - name: date_key
+        data_tests: [unique, not_null]
+
+  - name: fct_sales
+    description: >
+      Una fila por línea de venta o devolución, en tienda u online. Incremental (merge)
+      con un margen de días para los datos que llegan tarde.
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns: [document_id, line_number]
+    columns:
+      - name: customer_key
+        data_tests:
+          - relationships:
+              arguments: {to: ref('dim_customers'), field: customer_key}
+      - name: product_key
+        data_tests:
+          - relationships:
+              arguments: {to: ref('dim_products'), field: product_key}
+      - name: store_key
+        data_tests:
+          - relationships:
+              arguments: {to: ref('dim_stores'), field: store_key}
+      - name: channel_key
+        data_tests:
+          - relationships:
+              arguments: {to: ref('dim_channels'), field: channel_key}
+      - name: return_reason_key
+        data_tests:
+          - relationships:
+              arguments: {to: ref('dim_return_reasons'), field: return_reason_key}
+      - name: date_key
+        data_tests:
+          - relationships:
+              arguments: {to: ref('dim_date'), field: date_key}
+
+  - name: fct_web_events
+    description: Una fila por evento web, con su clienta si tenía la sesión iniciada. Incremental (merge).
+    columns:
+      - name: event_id
+        data_tests: [unique, not_null]
+      - name: customer_key
+        data_tests:
+          - relationships:
+              arguments: {to: ref('dim_customers'), field: customer_key}
+      - name: product_key
+        data_tests:
+          - relationships:
+              arguments: {to: ref('dim_products'), field: product_key}
+      - name: channel_key
+        data_tests:
+          - relationships:
+              arguments: {to: ref('dim_channels'), field: channel_key}
+      - name: date_key
+        data_tests:
+          - relationships:
+              arguments: {to: ref('dim_date'), field: date_key}

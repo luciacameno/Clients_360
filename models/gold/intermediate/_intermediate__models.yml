@@ -1,0 +1,26 @@
+models:
+  - name: int_customer_products__interest
+    description: R6 · Puntuación y temperatura del interés por clienta y producto (no comprados ni devueltos).
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments: {combination_of_columns: [customer_key, product_key]}
+    columns:
+      - name: temperature
+        data_tests:
+          - accepted_values:
+              arguments: {values: ['caliente', 'templado', 'frio']}
+
+  - name: int_customer_products__abandoned_carts
+    description: R7 · Último carrito de cada clienta y producto sin compra posterior en ningún canal.
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments: {combination_of_columns: [customer_key, product_key]}
+
+  - name: int_customers__shade
+    description: R9 · Tono confirmado y tonos descartados de cada clienta.
+    columns:
+      - name: customer_key
+        data_tests: [unique, not_null]
+
+  - name: int_recommendations__candidates
+    description: R10 (1.ª parte) · Productos candidatos a recomendar, con su motivo y puntuación base.

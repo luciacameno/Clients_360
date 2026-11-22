@@ -1,0 +1,30 @@
+models:
+  - name: agg_clienteling_360
+    description: La ficha del iPad. Una fila por clienta (P1, P2, P6, P9).
+    columns:
+      - name: customer_key
+        data_tests:
+          - unique
+          - not_null
+          - relationships:
+              arguments: {to: ref('dim_customers'), field: customer_key}
+
+  - name: agg_clienteling_signals
+    description: Las listas del iPad. Una fila por clienta x producto x tipo de señal (P3, P4, P5).
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments: {combination_of_columns: [customer_key, product_key, signal_type]}
+    columns:
+      - name: signal_type
+        data_tests:
+          - accepted_values:
+              arguments: {values: ['interes', 'carrito', 'devolucion']}
+
+  - name: agg_clienteling_recommendations
+    description: El top 3 del iPad. Una fila por clienta y posición del ranking (P7).
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments: {combination_of_columns: [customer_key, recommendation_rank]}
+
+
+       

@@ -63,3 +63,14 @@ seeds:
         store_id: varchar(30)
         store_name: varchar(50)
         city: varchar(30)
+vars:
+  incremental_lookback_days: 3        # margen para datos que llegan tarde (hechos incrementales)
+  reference_date: ''                  # R0: vacío = la fecha del último evento cargado
+  interest_weight_view: 1             # R6
+  interest_weight_cart: 3             # R6
+  interest_half_life_days: 14         # R6
+  interest_hot_threshold: 3           # R6
+  interest_warm_threshold: 1          # R6
+  interest_lookback_days: 180         # R6
+  abandoned_cart_window_days: 90      # R7
+  recommendations_top_n: 3            # R10

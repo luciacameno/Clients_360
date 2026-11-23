@@ -1,20 +1,67 @@
-{#
-  R10 (2.ª parte) · Top N por clienta:
-  1. excluir lo comprado y lo devuelto
-  2. un producto con varios motivos: puntuación más alta + 10 por motivo extra
-  3. como mucho un producto por subcategoría
-  4. ordenar por puntuación; desempate por la interacción más reciente
-#}
-with candidates as (
 
-    select candidates.*
-    from {{ ref('int_recommendations__candidates') }} candidates
+{#
+  R10 · Top N por clienta:
+  1. candidatos: carritos, interés caliente o templado y productos en su tono
+  2. excluir lo comprado y lo devuelto
+  3. un producto con varios motivos: puntuación más alta + 10 por motivo extra
+  4. como mucho un producto por subcategoría
+  5. ordenar por puntuación; desempate por la interacción más reciente
+#}
+with signals as (
+
+    select * from {{ ref('agg_clienteling_signals') }}
+
+),
+
+carts as (
+
+    select customer_key, product_key, 'carrito' as reason_code,
+           iff(days_since_cart <= 14, 90, 70) as base_score,
+           last_interaction_ts
+    from signals
+    where signal_type = 'carrito'
+
+),
+
+interests as (  -- el interés frío no se recomienda
+
+    select customer_key, product_key,
+           iff(temperature = 'caliente', 'interes_caliente', 'interes_templado') as reason_code,
+           iff(temperature = 'caliente', 80, 40)                                as base_score,
+           last_interaction_ts
+    from signals
+    where signal_type = 'interes' and temperature in ('caliente', 'templado')
+
+),
+
+shade_matches as (  -- el mismo producto de su gama, en su tono confirmado
+
+    select customers.customer_key, products.product_key, 'tono' as reason_code,
+           60 as base_score, null::timestamp_ntz as last_interaction_ts
+    from {{ ref('agg_clienteling_360') }} customers
+    inner join {{ ref('dim_products') }} products
+            on products.is_complexion
+           and products.shade = customers.confirmed_shade
+           and products.range_name = customers.confirmed_range
+
+),
+
+candidates as (
+
+    select all_candidates.*
+    from (
+        select * from carts
+        union all
+        select * from interests
+        union all
+        select * from shade_matches
+    ) all_candidates
     left join (
         select distinct customer_key, product_key from {{ ref('fct_sales') }}
     ) done
-           on candidates.customer_key = done.customer_key
-          and candidates.product_key = done.product_key
-    where done.customer_key is null --ni ha compradp ni devuelto ese producto 
+           on all_candidates.customer_key = done.customer_key
+          and all_candidates.product_key = done.product_key
+    where done.customer_key is null  -- ni comprado ni devuelto
 
 ),
 

@@ -30,7 +30,7 @@ models:
         data_tests:
           - relationships:
               arguments:
-                to: ref('slv_customers')
+                to: ref('slv_crm__customers')
                 field: customer_key
       - name: ticket_type
         data_tests:

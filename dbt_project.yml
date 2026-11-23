@@ -76,7 +76,3 @@ vars:
   recommendations_top_n: 3            # R10
 
 
-snapshots:
-  clients_360:
-    +database: "{{ env_var('DBT_SILVER_DB') }}"
-    +schema: snapshots

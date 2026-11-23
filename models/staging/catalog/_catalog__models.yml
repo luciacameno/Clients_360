@@ -1,9 +1,15 @@
 models:
   - name: stg_catalog__products
-    description: Catálogo de productos limpio. Una fila por producto.
+    description: >
+      Catálogo de productos limpio, 1:1 con Bronze. Con la ingesta por deltas, un producto
+      puede aparecer varias veces (una por carga); silver se queda con la última versión.
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns: [product_id, _loaded_at]
     columns:
       - name: product_id
-        data_tests: [unique, not_null]
+        data_tests: [not_null]
       - name: list_price_eur
         data_tests: [not_null]
       - name: category_name

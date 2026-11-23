@@ -1,9 +1,26 @@
 models:
   - name: dim_customers
-    description: Golden Record. Una fila por persona con la supervivencia del dato aplicada (R1b), más la fila -1.
+    description: >
+      Golden Record. Una fila por persona con los datos de su cuenta principal (la más antigua),
+      más la fila -1. Sin agregar: el tier más alto y el número de cuentas se calculan en los marts.
     columns:
       - name: customer_key
         data_tests: [unique, not_null]
+
+  - name: dim_accounts
+    description: Una fila por cuenta del CRM, con la persona a la que pertenece y su tier.
+    columns:
+      - name: account_key
+        data_tests: [unique, not_null]
+      - name: customer_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments: {to: ref('dim_customers'), field: customer_key}
+      - name: tier_name
+        data_tests:
+          - accepted_values:
+              arguments: {values: ['Silver', 'Gold', 'VIP']}
 
   - name: dim_products
     description: Productos con la jerarquía desnormalizada (gama, marca, subcategoría, categoría).

@@ -6,10 +6,15 @@
     )
 }}
 
-{#
-  Una fila por línea de venta o devolución, en tienda u online.
-  Regla R4: una compra online devuelta en tienda cuenta en el canal de la compra original.
-#}
+{% if is_incremental() %}
+{% set max_store_loaded %}
+    (select max(existing._loaded_at) from {{ this }} as existing where existing.store_key <> 'ONLINE')
+{% endset %}
+{% set max_online_loaded %}
+    (select max(existing._loaded_at) from {{ this }} as existing where existing.store_key = 'ONLINE')
+{% endset %}
+{% endif %}
+
 with ticket_lines as (
 
     select
@@ -17,6 +22,7 @@ with ticket_lines as (
         lines.line_number,
         lines.product_id,
         lines.amount_eur,
+        lines._loaded_at,
         tickets.store_id,
         tickets.customer_key,
         tickets.ticket_ts,
@@ -24,6 +30,27 @@ with ticket_lines as (
         tickets.identification_method
     from {{ ref('slv_pos__ticket_lines') }} lines
     inner join {{ ref('slv_pos__tickets') }} tickets on lines.ticket_id = tickets.ticket_id
+
+    {% if is_incremental() %}
+    -- Tipo A: cada línea de tique se calcula sola
+    where lines._loaded_at > {{ max_store_loaded }}
+    {% endif %}
+
+),
+
+new_order_lines as (
+
+    select * from {{ ref('slv_web__order_lines') }}
+
+    {% if is_incremental() %}
+    -- Tipo B: pedidos con alguna línea nueva, con TODAS sus líneas
+    -- (el line_number se calcula con row_number() sobre el pedido entero)
+    where order_id in (
+        select order_id
+        from {{ ref('slv_web__order_lines') }}
+        where _loaded_at > {{ max_online_loaded }}
+    )
+    {% endif %}
 
 ),
 
@@ -61,7 +88,8 @@ store_sales as (
         ticket_lines.ticket_type = 'RETURN'                        as is_return,
         returns.return_reason_id,
         coalesce(returns.original_ticket_id, returns.original_order_id) as original_document_id,
-        ticket_lines.identification_method
+        ticket_lines.identification_method,
+        ticket_lines._loaded_at
     from ticket_lines
     left join returns
            on ticket_lines.ticket_id = returns.ticket_id
@@ -74,11 +102,11 @@ store_sales as (
 online_sales as (
 
     select
-        order_lines.order_id                                       as document_id,
-        row_number() over (partition by order_lines.order_id
-                           order by order_lines.product_id)        as line_number,
-        order_lines.product_id,
-        order_lines.unit_price_eur                                 as amount_eur,
+        new_order_lines.order_id                                   as document_id,
+        row_number() over (partition by new_order_lines.order_id
+                           order by new_order_lines.product_id)    as line_number,
+        new_order_lines.product_id,
+        new_order_lines.unit_price_eur                             as amount_eur,
         orders.order_ts                                            as sale_ts,
         'ONLINE'                                                   as store_id,
         accounts.customer_key,
@@ -86,9 +114,10 @@ online_sales as (
         false                                                      as is_return,
         null                                                       as return_reason_id,
         null                                                       as original_document_id,
-        'login'                                                    as identification_method
-    from {{ ref('slv_web__order_lines') }} order_lines
-    inner join orders   on order_lines.order_id = orders.order_id
+        'login'                                                    as identification_method,
+        max(new_order_lines._loaded_at) over (partition by new_order_lines.order_id) as _loaded_at
+    from new_order_lines
+    inner join orders   on new_order_lines.order_id = orders.order_id
     left join  accounts on orders.crm_id = accounts.crm_id
 
 ),
@@ -118,12 +147,7 @@ select
     amount_eur,
     iff(is_return, -1, 1)                      as units,
     iff(is_return, 1, 0)                       as is_return,
-    iff(is_return, 0, 1)                       as is_sale
-from sales
+    iff(is_return, 0, 1)                       as is_sale,
 
-{% if is_incremental() %}
-where sale_ts > (
-    select dateadd(day, -{{ var('incremental_lookback_days') }}, max(sale_ts))
-    from {{ this }}
-)
-{% endif %}
+    _loaded_at
+from sales

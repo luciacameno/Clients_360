@@ -1,13 +1,23 @@
-{#
-  Cabecera del tique (2FN): tienda, fecha y clienta dependen solo de ticket_id.
-  Identificación de la clienta (regla R1c):
-    1. email limpio que existe en el CRM
-    2. si no, teléfono limpio que pertenece a UNA sola clienta
-    3. si no, sin identificar (customer_key nulo)
-#}
+{{
+    config(
+        materialized='incremental',
+        incremental_strategy='merge',
+        unique_key='ticket_id'
+    )
+}}
+
 with sales as (
 
     select * from {{ ref('stg_pos__sales') }}
+
+    {% if is_incremental() %}
+    -- Tiques con alguna línea nueva, recalculados con TODAS sus líneas
+    where ticket_id in (
+        select ticket_id
+        from {{ ref('stg_pos__sales') }}
+        where _loaded_at > (select max(existing._loaded_at) from {{ this }} as existing)
+    )
+    {% endif %}
 
 ),
 
@@ -20,7 +30,8 @@ headers as (
         any_value(transaction_type) as ticket_type,
         any_value(email_raw)        as email_raw,
         any_value(email)            as email,
-        any_value(phone)            as phone
+        any_value(phone)            as phone,
+        max(_loaded_at)             as _loaded_at
     from sales
     group by ticket_id
 
@@ -59,7 +70,8 @@ select
         when phone_owners.n_customers = 1                   then 'telefono'
         when phone_owners.n_customers > 1                   then 'telefono_compartido'
         else 'ninguno'
-    end                                                     as identification_method
+    end                                                     as identification_method,
+    headers._loaded_at
 from headers
 left join accounts     on headers.email = accounts.email
 left join phone_owners on headers.phone = phone_owners.phone

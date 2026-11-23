@@ -6,19 +6,12 @@
     )
 }}
 
-{#
-  Regla R5 (alcance actual): un evento es de una clienta si tenía la sesión iniciada.
-  email logado -> cuenta -> clienta. Los eventos anónimos van a la clienta -1.
-#}
 with events as (
 
     select * from {{ ref('slv_web__events') }}
 
     {% if is_incremental() %}
-    where event_ts > (
-        select dateadd(day, -{{ var('incremental_lookback_days') }}, max(event_ts))
-        from {{ this }}
-    )
+    where _loaded_at > (select max(existing._loaded_at) from {{ this }} as existing)
     {% endif %}
 
 ),
@@ -49,7 +42,9 @@ select
     iff(events.action = 'view_item', 1, 0)            as is_view,
     iff(events.action = 'add_to_cart', 1, 0)          as is_add_to_cart,
     iff(events.action = 'purchase', 1, 0)             as is_purchase,
-    iff(events.logged_email is null, 1, 0)            as is_anonymous
+    iff(events.logged_email is null, 1, 0)            as is_anonymous,
+
+    events._loaded_at
 from events
 inner join sessions on events.session_id = sessions.session_id
 left join  accounts on events.logged_email = accounts.email

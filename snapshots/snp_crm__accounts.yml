@@ -1,0 +1,14 @@
+snapshots:
+  - name: snp_crm__accounts
+    relation: ref('stg_crm__accounts')
+    description: >
+      Historial de las cuentas del CRM (SCD tipo 2). Cada cambio de tier, email o teléfono
+      cierra la versión anterior y abre una nueva con sus fechas de validez.
+    config:
+      unique_key: crm_id
+      strategy: check
+      check_cols: [tier_name, email, phone]
+      hard_deletes: invalidate
+    columns:
+      - name: dbt_scd_id
+        data_tests: [unique, not_null] 

@@ -74,3 +74,9 @@ vars:
   interest_lookback_days: 180         # R6
   abandoned_cart_window_days: 90      # R7
   recommendations_top_n: 3            # R10
+
+
+snapshots:
+  clients_360:
+    +database: "{{ env_var('DBT_SILVER_DB') }}"
+    +schema: snapshots

@@ -35,12 +35,11 @@ models:
     gold:
       +database: "{{ env_var('DBT_GOLD_DB') }}"
       +tags: ['gold']
-      intermediate:
-        +schema: intermediate
-        +materialized: view
+     
       core:
         +schema: core
         +materialized: table
+        +tags: ['core']
       clienteling:
         +schema: clienteling
         +materialized: table

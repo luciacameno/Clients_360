@@ -35,6 +35,8 @@ models:
     gold:
       +database: "{{ env_var('DBT_GOLD_DB') }}"
       +tags: ['gold']
+      +grants:
+        select: ['BI_READER_ROLE']     # Power BI puede leer gold (core y clienteling)
      
       core:
         +schema: core
